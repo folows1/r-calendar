@@ -3,8 +3,10 @@ import React, { useState } from "react";
 function App() {
 
   const [selectedSemester, setSelectedSemester] = useState<null | number>(null);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [yearInput, setYearInput] = useState<string>('');
 
-  const dias = [
+  const weekDays = [
     { name: 'segunda', value: 1, label: 'Segunda-feira' },
     { name: 'terça', value: 2, label: 'Terça-feira' },
     { name: 'quarta', value: 3, label: 'Quarta-feira' },
@@ -16,7 +18,55 @@ function App() {
     return selectedSemester === semester;
   }
 
-  const handleSemesterChange = (e: React.ChangeEvent<HTMLInputElement>): void => setSelectedSemester(Number(e.target.value));
+  function isDaySelected(day: number): boolean {
+    return selectedDays.includes(day);
+  }
+
+  function handleDaysChange(e: React.ChangeEvent<HTMLInputElement>): void {
+    const { value } = e.target;
+    const day = Number(value);
+    if (selectedDays.includes(day)) {
+      setSelectedDays(selectedDays.filter((item) => item !== day));
+    } else {
+      setSelectedDays([...selectedDays, day]);
+    }
+  }
+
+  const handleSemesterChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setSelectedSemester(Number(e.target.value));
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
+    e.preventDefault();
+    const dataToSubmit = {
+      ano: Number(yearInput),
+      semestre: selectedSemester,
+      dias_da_semana: selectedDays,
+    }
+    console.log(dataToSubmit);
+    const resp = fetch('http:localhost:3001/api/v1', {
+      headers: {
+        'Accept': '*/*',
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+      method: 'POST',
+      body: JSON.stringify(dataToSubmit),
+    });
+    resp.then((res) => console.log(res))
+      .catch((err) => console.log(err));
+    clearForm();
+  }
+
+  function handleYearInput(e: React.ChangeEvent<HTMLInputElement>): void {
+    setYearInput(e.target.value);
+  }
+
+  function clearForm(): void {
+    setSelectedDays([]);
+    setSelectedSemester(null);
+    setYearInput('');
+  }
 
 
   return (
@@ -24,12 +74,12 @@ function App() {
       <h1>
         Aulas
       </h1>
-      <form>
+      <form onSubmit={handleSubmit}>
 
         <label>
           Ano
         </label>
-        <input type="number" required />
+        <input type="number" required value={yearInput} onChange={handleYearInput} />
 
         <input type="radio" name="semestre" value={1} checked={isSemesterSelected(1)} onChange={handleSemesterChange} id="primeiro" />
         <label htmlFor="primeiro">
@@ -41,9 +91,9 @@ function App() {
           2º Semestre
         </label>
 
-        {dias.map(dia => (
+        {weekDays.map(dia => (
           <div key={dia.value}>
-            <input type="checkbox" name={dia.name} value={dia.value} id={dia.label} />
+            <input type="checkbox" name={dia.name} value={dia.value} id={dia.label} onChange={handleDaysChange} checked={isDaySelected(dia.value)} />
             <label htmlFor={dia.label}>
               {dia.label}
             </label>
