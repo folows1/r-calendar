@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import List from "./List";
 
 function App() {
 
   const [selectedSemester, setSelectedSemester] = useState<null | number>(null);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [yearInput, setYearInput] = useState<string>('');
+  const [responseArray, setResponseArray] = useState<string[]>([]);
 
   const weekDays = [
     { name: 'segunda', value: 1, label: 'Segunda-feira' },
@@ -36,7 +38,7 @@ function App() {
     setSelectedSemester(Number(e.target.value));
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     const dataToSubmit = {
       ano: Number(yearInput),
@@ -44,17 +46,20 @@ function App() {
       dias_da_semana: selectedDays,
     }
     console.log(dataToSubmit);
-    const resp = fetch('http:localhost:3001/api/v1', {
-      headers: {
-        'Accept': '*/*',
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+    const resp = await fetch('http://localhost:3001/api/v1/classes', {
       method: 'POST',
       body: JSON.stringify(dataToSubmit),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
-    resp.then((res) => console.log(res))
-      .catch((err) => console.log(err));
+    if (resp.ok) {
+      const data = await resp.json();
+      setResponseArray(data);
+    } else {
+      const { msg } = await resp.json();
+      alert('Erro ao enviar dados: ' + msg);
+    }
     clearForm();
   }
 
@@ -70,6 +75,7 @@ function App() {
 
 
   return (
+    <>
     <div>
       <h1>
         Aulas
@@ -103,6 +109,8 @@ function App() {
         <input type="submit" value="Enviar" />
       </form>
     </div>
+      <List responseArray={responseArray} />
+    </>
   )
 }
 
